@@ -1,6 +1,20 @@
-﻿# временные файлы Office и проверочные картинки
+# временные файлы Office и проверочные картинки
 ~$*
 pptx/preview/
 Thumbs.db
 desktop.ini
 .claude/
+# Только на компьютере команды, в репозитории не нужны:
+# презентации (сайт и PowerPoint), выкладка на сервер и инструменты съёмки кадров для презентаций
+/presentation/
+/pptx/
+/dev/upload.ps1
+/dev/*.bat
+/dev/assets.html
+/dev/capture.html
+/dev/scenes.js
+/dev/recorder.js
+/dev/vclock.js
+/dev/receiver.ps1
+/dev/gifview.html
+/dev/qrtest.html
