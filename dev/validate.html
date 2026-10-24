@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Проверка решаемости дней</title>
+<style>
+body{background:#1b1612;color:#eee;font:14px/1.5 Consolas,monospace;padding:20px}
+.ok{color:#7ddc7d}.bad{color:#ff7b6b}pre{white-space:pre-wrap}
+</style></head><body>
+<h2>ИнфоповодоИнатор: автоматическая проверка</h2>
+<p>Для каждой сложности, дня и нескольких сотен seed генерируется день. Проверяется: каждая новость доставлена, у каждой есть надёжная подсказка (кроме новостей босса и очевидных нелепиц), достаточно достоверных логичных новостей для идеальной страницы, звонки не накладываются, надёжные подсказки не вводят в заблуждение.</p>
+<pre id="out">Идёт проверка…</pre>
+<script src="../js/core/util.js"></script>
+<script src="../js/content/groups.js"></script>
+<script src="../js/content/groups2.js"></script>
+<script src="../js/content/world.js"></script>
+<script src="../js/content/extras.js"></script>
+<script src="../js/core/engine.js"></script>
+<script>
+(function () {
+  const out = document.getElementById('out');
+  const diffs = ['easy', 'normal', 'hard'];
+  const SEEDS = 400;
+  let total = 0, bad = 0, lines = [];
+  const stats = {};
+  // содержимое
+  const ids = new Set();
+  Object.keys(ITEM_BY_ID).forEach(id => { if (ids.has(id)) lines.push('Дубликат id ' + id); ids.add(id); });
+  GROUPS.forEach(g => {
+    const t = g.items.filter(i => i.v === 1).length, f = g.items.filter(i => i.v === 0).length;
+    lines.push('Тема «' + g.name + '»: достоверных ' + t + ', ложных ' + f);
+    g.items.forEach(i => { if (!i.ok) { lines.push('  ✖ нет подсказки (ok): ' + i.id); bad++; } if (!i.why || !i.src) { lines.push('  ✖ нет разбора/источника: ' + i.id); bad++; } });
+  });
+  NOISE_FALSE.forEach(i => { if (!i.ok && !i.obv) { lines.push('  ✖ шум без подсказки и не obv: ' + i.id); bad++; } });
+  lines.push('Нелепых ложных новостей: ' + NOISE_FALSE.length);
+  diffs.forEach(d => {
+    for (let day = 1; day <= DAYS_TOTAL; day++) {
+      for (let s = 0; s < SEEDS; s++) {
+        const prog = Engine.newProgress('Тест', d, 1000 + s);
+        prog.day = day; prog.bonus = (s % 5 === 0) ? 3 : 0;
+        // имитируем использованные темы, чтобы ходить по разным группам
+        prog.used = GROUPS.slice(0, (day - 1)).map(g => g.id).filter((x, i) => (s + i) % 3 !== 0);
+        const dayObj = Engine.makeDay(prog);
+        const p = Engine.validateDay(dayObj);
+        total++;
+        const k = d + '/день ' + day;
+        stats[k] = stats[k] || { n: 0, items: 0, calls: 0, papers: 0 };
+        stats[k].n++; stats[k].items += Object.keys(dayObj.items).length; stats[k].calls += dayObj.calls.length; stats[k].papers += dayObj.papers.length;
+        if (p.length) { bad++; if (lines.length < 60) lines.push('✖ ' + d + ' день ' + day + ' seed ' + (1000 + s) + ': ' + p.join('; ')); }
+      }
+    }
+  });
+  Object.keys(stats).forEach(k => { const s = stats[k]; lines.push(k + ': новостей в среднем ' + (s.items / s.n).toFixed(1) + ', звонков ' + (s.calls / s.n).toFixed(1) + ', газет ' + (s.papers / s.n).toFixed(1)); });
+  lines.unshift((bad ? '<span class="bad">НАЙДЕНО ПРОБЛЕМ: ' + bad + '</span>' : '<span class="ok">ВСЕ ' + total + ' ДНЕЙ РЕШАЕМЫ, ПРОБЛЕМ НЕТ</span>') + ' (проверено дней: ' + total + ')');
+  out.innerHTML = lines.join('\n');
+  window.__result = { total: total, bad: bad };
+})();
+</script></body></html>

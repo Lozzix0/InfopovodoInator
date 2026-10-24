@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Запись роликов</title>
+<!-- Служебная страница: запускает игру на виртуальных часах и записывает GIF и скриншоты для презентации.
+     Порядок: powershell -File dev/receiver.ps1, затем открыть эту страницу и вызвать Scenes.* из консоли (см. dev/scenes.js). -->
+<script>window.__lf = []; window.AudioContext = undefined; window.webkitAudioContext = undefined;</script>
+<script src="vclock.js"></script>
+<link rel="stylesheet" href="../css/game.css">
+<style>
+/* настоящий :hover синтетическими событиями не включить, поэтому у рекордера есть класс hov */
+.blk.item.hov .mk { background: rgba(255,228,120,.95); }
+.blk.item.got.hov .mk { background: rgba(255,206,52,.98); }
+.dc.hov canvas { filter: brightness(1.18); }
+.mug.hov > canvas:first-child { filter: brightness(1.12); }
+.btn.hov { filter: brightness(1.12); }
+.readpile.spread .rp.hov canvas { transform: translateY(-18px) scale(1.06); }
+.fp-hbtn.hov { background: #fff0b0; }
+.fcard.hov { filter: brightness(1.08); }
+#clickring { position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; border: 3px solid #e2b64c; border-radius: 50%; pointer-events: none; z-index: 99997; opacity: 0; }
+#clickring.go { animation: clk .35s ease-out; }
+@keyframes clk { 0% { opacity: .95; transform: scale(.3); } 100% { opacity: 0; transform: scale(1.5); } }
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <div id="stage">
+    <div id="desk"></div>
+    <div id="vignette"></div>
+    <div id="tension"></div>
+    <div id="dialog"></div>
+    <div id="ov"></div>
+    <div id="toast"></div>
+  </div>
+</div>
+<div id="rotate-hint" hidden></div>
+<div id="boot-fail" style="display:none"><span id="lf-list"></span></div>
+<script src="../js/core/util.js"></script>
+<script src="../js/core/tween.js"></script>
+<script src="../js/core/sprites.js"></script>
+<script src="../js/core/audio.js"></script>
+<script src="../js/content/groups.js"></script>
+<script src="../js/content/groups2.js"></script>
+<script src="../js/content/world.js"></script>
+<script src="../js/content/extras.js"></script>
+<script src="../js/core/engine.js"></script>
+<script src="../js/ui/common.js"></script>
+<script src="../js/ui/desk.js"></script>
+<script src="../js/ui/finalpage.js"></script>
+<script src="../js/ui/interview.js"></script>
+<script src="../js/ui/tour.js"></script>
+<script src="../js/ui/flow.js"></script>
+<script src="../js/ui/dev.js"></script>
+<script src="../js/main.js"></script>
+<script src="recorder.js"></script>
+<script src="scenes.js"></script>
+</body>
+</html>

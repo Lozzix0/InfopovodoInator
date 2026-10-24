@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0e0a08">
+<meta name="description" content="ИнфоповодоИнатор — пиксельная игра о профессии журналиста: собирайте инфоповоды, проверяйте их достоверность и сдавайте материал до конца дня.">
+<title>ИнфоповодоИнатор — игра о профессии журналиста</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%236c4630'/%3E%3Crect x='3' y='2' width='10' height='12' fill='%23eadfc2'/%3E%3Crect x='4' y='3' width='8' height='2' fill='%23b8392d'/%3E%3Crect x='4' y='6' width='8' height='1' fill='%23241c16'/%3E%3Crect x='4' y='8' width='8' height='1' fill='%23241c16'/%3E%3Crect x='4' y='10' width='5' height='1' fill='%23241c16'/%3E%3C/svg%3E">
+<script>window.__lf = [];</script>
+<link rel="stylesheet" href="css/game.css" onerror="__lf.push('css/game.css')">
+</head>
+<body>
+<div id="stage-wrap">
+  <div id="stage">
+    <div id="desk"></div>
+    <div id="vignette"></div>
+    <div id="tension"></div>
+    <div id="dialog"></div>
+    <div id="ov"></div>
+    <div id="toast"></div>
+  </div>
+</div>
+<div id="rotate-hint" hidden>
+  <div class="rh-phone"></div>
+  <div>ПОВЕРНИТЕ ТЕЛЕФОН<br>ГОРИЗОНТАЛЬНО</div>
+  <div class="rh-sub">Игра рассчитана на широкий экран: на вертикальном всё получается слишком мелким.</div>
+  <button type="button">ВСЁ РАВНО ИГРАТЬ</button>
+</div>
+<!-- Показывается только если игра не запустилась (например, index.html открыт из файлового менеджера без остальных файлов); стили заданы прямо здесь -->
+<div id="boot-fail" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#0e0a08;color:#f2ece0;padding:20px;font:16px/1.5 sans-serif;overflow:auto">
+  <b style="color:#e2b64c;font-size:18px">Игра не загрузилась целиком</b>
+  <p>Браузер не получил часть файлов игры (стили или скрипты). Так бывает, если открыть <code>index.html</code> прямо из файлового менеджера, мессенджера или почты, а также если папка скопирована на телефон не полностью.</p>
+  <p><b>Как исправить:</b></p>
+  <ol>
+    <li>откройте игру по ссылке на хостинге (например, GitHub Pages);</li>
+    <li>или возьмите один файл <code>dist/infopovodoinator.html</code>: в нём всё внутри, он открывается прямо из файлового менеджера;</li>
+    <li>или скопируйте на телефон папку игры целиком (<code>css</code>, <code>js</code>, <code>fonts</code>, <code>index.html</code>) и откройте через приложение-веб-сервер.</li>
+  </ol>
+  <p style="color:#cfc29c">Не загрузились: <span id="lf-list">неизвестно</span></p>
+</div>
+<noscript><p style="color:#fff;padding:24px;font:16px sans-serif">Для игры нужен включённый JavaScript.</p></noscript>
+<script src="js/core/util.js" onerror="__lf.push('js/core/util.js')"></script>
+<script src="js/core/tween.js" onerror="__lf.push('js/core/tween.js')"></script>
+<script src="js/core/sprites.js" onerror="__lf.push('js/core/sprites.js')"></script>
+<script src="js/core/audio.js" onerror="__lf.push('js/core/audio.js')"></script>
+<script src="js/content/groups.js" onerror="__lf.push('js/content/groups.js')"></script>
+<script src="js/content/groups2.js" onerror="__lf.push('js/content/groups2.js')"></script>
+<script src="js/content/world.js" onerror="__lf.push('js/content/world.js')"></script>
+<script src="js/content/extras.js" onerror="__lf.push('js/content/extras.js')"></script>
+<script src="js/core/engine.js" onerror="__lf.push('js/core/engine.js')"></script>
+<script src="js/ui/common.js" onerror="__lf.push('js/ui/common.js')"></script>
+<script src="js/ui/desk.js" onerror="__lf.push('js/ui/desk.js')"></script>
+<script src="js/ui/finalpage.js" onerror="__lf.push('js/ui/finalpage.js')"></script>
+<script src="js/ui/interview.js" onerror="__lf.push('js/ui/interview.js')"></script>
+<script src="js/ui/tour.js" onerror="__lf.push('js/ui/tour.js')"></script>
+<script src="js/ui/flow.js" onerror="__lf.push('js/ui/flow.js')"></script>
+<script src="js/ui/dev.js" onerror="__lf.push('js/ui/dev.js')"></script>
+<script src="js/main.js" onerror="__lf.push('js/main.js')"></script>
+<script>
+/* Если за несколько секунд игра не запустилась (скрипты не загрузились), показываем объяснение вместо пустого экрана */
+setTimeout(function () {
+  if (window.__booted) return;
+  var b = document.getElementById('boot-fail'), l = document.getElementById('lf-list');
+  if (l && window.__lf && window.__lf.length) l.textContent = window.__lf.join(', ');
+  if (b) b.style.display = 'block';
+}, 3500);
+</script>
+</body>
+</html>

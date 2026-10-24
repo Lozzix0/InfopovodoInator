@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Просмотр роликов</title>
+<style>body{margin:0;background:#222;color:#eee;font:12px sans-serif}img,canvas{display:block;width:100%;max-width:1200px}</style></head>
+<body><script>
+/* dev/gifview.html?f=papers — посмотреть записанный ролик из presentation/media.
+   С параметром &sheet=1 показывает «контактный лист»: восемь кадров по порядку, чтобы проверить ролик глазами, не дожидаясь воспроизведения. */
+var q = location.search, f = (q.match(/f=([\w-]+)/) || [0, 'papers'])[1], url = '../presentation/media/' + f + '.gif?t=' + Date.now();
+if (!/sheet=1/.test(q)) {
+  document.write('<img src="' + url + '"><div>' + f + '.gif</div>');
+} else {
+  (async function () {
+    const buf = await (await fetch(url)).arrayBuffer();
+    const dec = new ImageDecoder({ data: buf, type: 'image/gif' });
+    await dec.tracks.ready;
+    const n = dec.tracks.selectedTrack.frameCount, pick = 8, cols = 4, w = 480, h = 270;
+    const cv = document.createElement('canvas'); cv.width = cols * w; cv.height = Math.ceil(pick / cols) * h;
+    document.body.appendChild(cv);
+    const g = cv.getContext('2d'); g.fillStyle = '#222'; g.fillRect(0, 0, cv.width, cv.height);
+    g.font = '14px sans-serif';
+    for (let i = 0; i < pick; i++) {
+      const idx = Math.min(n - 1, Math.round(i * (n - 1) / (pick - 1)));
+      const fr = (await dec.decode({ frameIndex: idx, completeFramesOnly: true })).image;
+      const x = (i % cols) * w, y = Math.floor(i / cols) * h;
+      g.drawImage(fr, x, y, w, h); g.fillStyle = '#fff'; g.fillText('#' + idx, x + 6, y + 18);
+      fr.close();
+    }
+    const d = document.createElement('div'); d.textContent = f + '.gif — кадров: ' + n + ', размер файла: ' + Math.round(buf.byteLength / 1024) + ' КБ'; document.body.appendChild(d);
+  })().catch(e => { document.body.textContent = 'ошибка: ' + e; });
+}
+</script></body></html>

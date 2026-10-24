@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Галерея спрайтов</title>
+<style>
+body{background:#222;color:#eee;font:14px sans-serif;padding:16px}
+.px{image-rendering:pixelated;display:inline-block;margin:6px;vertical-align:top}
+h3{margin:18px 0 4px}
+</style></head><body>
+<div id="out"></div>
+<script src="../js/core/util.js"></script>
+<script src="../js/core/sprites.js"></script>
+<script>
+const out = document.getElementById('out');
+function add(title, nodes) { const h = document.createElement('h3'); h.textContent = title; out.appendChild(h); [].concat(nodes).forEach(n => out.appendChild(n)); }
+add('Стол (480x270 → x2)', Sprites.clone(Sprites.desk(), 2));
+add('Газеты', [1,2,3].map(r => Sprites.clone(Sprites.paperThumb(r, r, 64, 84), 2)));
+add('Телефон, трубка на базе, лежачая трубка, блокнот', [Sprites.clone(Sprites.phoneBase(), 4), Sprites.clone(Sprites.handsetUp(), 4), Sprites.clone(Sprites.handsetLying(), 4), Sprites.clone(Sprites.pad(), 2)]);
+const specs = [
+ {skin:'#e8b88a',hair:'#8c8c8c',hairStyle:'bald',shirt:'#3d4f7a',acc:['tie','glasses'],bg:'#cdd6e6'},
+ {skin:'#f3cfae',hair:'#b4472d',hairStyle:'long',shirt:'#c9566e',acc:['headphones'],bg:'#f1d9d6'},
+ {skin:'#e0b48c',hair:'#2e2018',hairStyle:'short',shirt:'#4b7d6b',acc:['mustache'],bg:'#d6ead8'},
+ {skin:'#d9a97e',hair:'#2a2a2a',hairStyle:'hat',shirt:'#3a3a44',acc:['beard'],bg:'#e0d6c0'},
+ {skin:'#f0c9a6',hair:'#6b4426',hairStyle:'curly',shirt:'#6b57c7',acc:['glasses','scarf'],bg:'#ddd6f3'},
+ {skin:'#e8c19a',hair:'#3b2a1e',hairStyle:'cap',shirt:'#e0842a',acc:[],bg:'#f2dfc2'}
+];
+add('Портреты', specs.map(s => Sprites.portrait(s, {scale:4})));
+add('Силуэты', specs.map(s => Sprites.portrait(s, {scale:4, flat:'#17120d', bg:'#c9bd9a'})));
+add('Иконки', ['speaker','speakerOff','note','floppy','check','cross','star','bell','clock','quest'].map(n => Sprites.icon(n, '#ffffff', 4)));
+</script></body></html>

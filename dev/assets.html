@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Картинки для PPTX</title>
+<style>
+@font-face { font-family: 'PS2P'; src: url('../fonts/PressStart2P-Regular.ttf'); font-display: block; }
+body { font: 14px monospace; background: #222; color: #eee; padding: 12px; }
+canvas { max-width: 420px; margin: 6px; background: #444; }
+</style></head>
+<body><div id="out">Нажмите кнопку в консоли: Assets.run()</div>
+<script src="../js/core/util.js"></script>
+<script src="../js/core/sprites.js"></script>
+<script src="../presentation/config.js"></script>
+<script src="../presentation/qr.js"></script>
+<script src="../presentation/skin3d.js"></script>
+<script>
+/* Служебная страница: рисует картинки для презентации в PPTX и отправляет их приёмнику (dev/receiver.ps1, порт 5190) в pptx/media.
+   bg_wood.png: фон-«доски», logo.png: логотип шрифтом Press Start 2P на прозрачном фоне, qr_game.png и qr_repo.png: коды из presentation/config.js.
+   Запуск: открыть страницу и выполнить в консоли  await Assets.run() */
+const Assets = (() => {
+  const A = {};
+  /* dest: 'pptx' (по умолчанию) кладёт в pptx/media, 'site' в presentation/media (оттуда картинку берут и сайт, и сборка PPTX) */
+  const up = async (name, canvas, dest) => {
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+    const res = await fetch('http://localhost:5190/save?' + (dest === 'site' ? '' : 'to=pptx&') + 'name=' + name, { method: 'POST', body: blob });
+    document.getElementById('out').appendChild(canvas);
+    return name + ' ' + Math.round(blob.size / 1024) + ' КБ (' + res.status + ')';
+  };
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+  A.wood = async () => {
+    const c = document.createElement('canvas'); c.width = 1920; c.height = 1080; const g = c.getContext('2d');
+    g.fillStyle = '#4a3022'; g.fillRect(0, 0, 1920, 1080);
+    for (let i = 0; i < 2600; i++) {                                    // тонкие волокна дерева
+      const x = rnd() * 1920, y = rnd() * 1080, w = 60 + rnd() * 340;
+      g.fillStyle = rnd() < 0.5 ? 'rgba(0,0,0,' + (0.03 + rnd() * 0.05) + ')' : 'rgba(255,205,160,' + (0.015 + rnd() * 0.03) + ')';
+      g.fillRect(x, y, w, 2 + Math.floor(rnd() * 3));
+    }
+    g.fillStyle = 'rgba(0,0,0,.34)'; for (let x = 240; x < 1920; x += 240) g.fillRect(x - 2, 0, 4, 1080);   // стыки досок
+    g.fillStyle = 'rgba(255,255,255,.03)'; for (let x = 238; x < 1920; x += 240) g.fillRect(x + 2, 0, 2, 1080);
+    const v = g.createRadialGradient(960, 540, 420, 960, 540, 1150); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.55)');
+    g.fillStyle = v; g.fillRect(0, 0, 1920, 1080);
+    return up('bg_wood.png', c);
+  };
+
+  A.logo = async () => {
+    await document.fonts.load('100px PS2P');
+    const c = document.createElement('canvas'); c.width = 1760; c.height = 450; const g = c.getContext('2d');
+    g.font = '170px PS2P'; g.textBaseline = 'top';
+    const lines = ['ИНФОПОВОДО', 'ИНАТОР'];
+    lines.forEach((t, i) => {
+      const y = 20 + i * 220;
+      g.fillStyle = '#241c16'; g.fillText(t, 30 + 24, y + 24);
+      g.fillStyle = '#b8392d'; g.fillText(t, 30 + 12, y + 12);
+      g.fillStyle = '#e2b64c'; g.fillText(t, 30, y);
+    });
+    return up('logo.png', c);
+  };
+
+  A.qr = async () => {
+    const res = [];
+    for (const p of [['qr_game.png', DECK.gameUrl], ['qr_repo.png', DECK.repoUrl], ['qr_clips.png', DECK.clipsUrl], ['qr_deck.png', DECK.deckUrl]]) {
+      if (!p[1]) { res.push(p[0] + ': адрес не задан в presentation/config.js'); continue; }
+      const c = document.createElement('canvas'); QR.draw(c, p[1], 16, 2, '#000000', '#ffffff');
+      res.push(await up(p[0], c));
+    }
+    return res.join('; ');
+  };
+
+  /* Скин Minecraft (presentation/media/skin_lozzix_raw.png, 64x64) в стиле игры, две картинки:
+     skin_lozzix_game.png: скин, приведённый к палитре игры (его на сайте крутит presentation/skin3d.js);
+     skin_lozzix.png: 3D-фигура в позе шага, вид в три четверти, прозрачный фон (для PPTX, где анимации запрещены, и как запасная картинка).
+     Чтобы взять другой скин, замените raw-файл (его можно скачать на NameMC кнопкой «Скачать») и выполните  await Assets.skin() */
+  A.skin = async () => {
+    const img = new Image(); img.src = '../presentation/media/skin_lozzix_raw.png?t=' + Date.now(); await img.decode();
+    let slim = false; try { slim = (await (await fetch('../presentation/media/skin_model.txt?t=' + Date.now())).text()).trim() === 'slim'; } catch (e) { /* нет файла: классическая модель */ }
+    const graded = Skin3D.grade(img);
+    const r1 = await up('skin_lozzix_game.png', graded, 'site');
+    const small = document.createElement('canvas'); small.width = 144; small.height = 240;
+    Skin3D.make(graded, slim).render(small.getContext('2d'), 144, 240, { S: 6, yaw: 0.6, pitch: 0.28, swing: 0.5, bob: 0 });
+    const big = document.createElement('canvas'); big.width = 144 * 3; big.height = 240 * 3;
+    const bg = big.getContext('2d'); bg.imageSmoothingEnabled = false; bg.drawImage(small, 0, 0, big.width, big.height);
+    const r2 = await up('skin_lozzix.png', big, 'site');
+    return r1 + '; ' + r2;
+  };
+  /* Фон последнего слайда «404»: красноватое свечение «экрана ошибки», по нему огромный тёмный силуэт ФуфелСмерча (тот же спрайт, что в игре).
+     Текст ошибки накладывается поверх уже на самом слайде (в HTML и в PPTX), поэтому здесь только фон. */
+  A.bg404 = async () => {
+    const W = 1920, H = 1080, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+    const glow = g.createRadialGradient(W * 0.36, H * 0.66, 40, W * 0.36, H * 0.66, W * 0.75);
+    glow.addColorStop(0, '#7e1f15'); glow.addColorStop(0.35, '#3d0f0b'); glow.addColorStop(1, '#0a0403');
+    g.fillStyle = glow; g.fillRect(0, 0, W, H);
+    const src = Sprites.fufelProfile(), N = src.width, tmp = document.createElement('canvas'); tmp.width = tmp.height = N;
+    const tg = tmp.getContext('2d'); tg.drawImage(src, 0, 0);
+    const d = tg.getImageData(0, 0, N, N), mask = document.createElement('canvas'); mask.width = mask.height = N;
+    const mg = mask.getContext('2d'), md = mg.createImageData(N, N);
+    for (let i = 0; i < N * N; i++) { const dark = d.data[i * 4] < 80; md.data[i * 4 + 3] = dark ? 255 : 0; }       // тёмные клетки спрайта: силуэт, светлый фон и воротничок вырезаются
+    mg.putImageData(md, 0, 0);
+    const S = 24, sx = 580, sy = -30;                                                                            // 1150 пикселей в высоту: фигура занимает весь слайд, плечи обрезаны низом, нос смотрит на текст ошибки слева
+    const paint = (color, dx, dy) => {
+      const lay = document.createElement('canvas'); lay.width = W; lay.height = H; const lg = lay.getContext('2d'); lg.imageSmoothingEnabled = false;
+      lg.drawImage(mask, sx + dx, sy + dy, N * S, N * S);
+      lg.globalCompositeOperation = 'source-in'; lg.fillStyle = color; lg.fillRect(0, 0, W, H);
+      g.drawImage(lay, 0, 0);
+    };
+    paint('#5a1913', -12, -8);                                                                                    // отсвет от экрана по краю силуэта
+    paint('#050202', 0, 0);                                                                                       // сам силуэт
+    g.globalAlpha = 0.07; g.fillStyle = '#000'; for (let y = 0; y < H; y += 4) g.fillRect(0, y, W, 2); g.globalAlpha = 1;   // строки развёртки
+    const vg = g.createRadialGradient(W / 2, H / 2, H * 0.45, W / 2, H / 2, W * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.7)');
+    g.fillStyle = vg; g.fillRect(0, 0, W, H);
+    return up('bg_404.png', c, 'site');
+  };
+
+  /* Надпись «404 / NOT FOUND» шрифтом Press Start 2P с глитч-тенями, прозрачный фон (для PPTX, где этого шрифта может не быть) */
+  A.err404 = async () => {
+    await document.fonts.load('100px PS2P');
+    const c = document.createElement('canvas'); c.width = 740; c.height = 360; const g = c.getContext('2d'); g.textBaseline = 'top';
+    const draw = (txt, size, y) => {
+      g.font = size + 'px PS2P';
+      g.fillStyle = '#1a0504'; g.fillText(txt, 18, y + 12);
+      g.fillStyle = '#2fb7d8'; g.fillText(txt, 4, y);
+      g.fillStyle = '#ff4d3a'; g.fillText(txt, 12, y + 4);
+      g.fillStyle = '#ffd9c9'; g.fillText(txt, 12, y + 4);
+      g.globalCompositeOperation = 'source-atop'; g.globalCompositeOperation = 'source-over';
+    };
+    draw('404', 220, 6);
+    draw('NOT FOUND', 72, 268);
+    return up('err404.png', c, 'site');
+  };
+
+  A.run = async () => [await A.wood(), await A.logo(), await A.qr(), await A.skin(), await A.bg404(), await A.err404()].join('\n');
+  return A;
+})();
+</script></body></html>
