@@ -405,7 +405,7 @@ foreach ($q in $qr) {
   $x = 48 + $i * 224
   if ($q[1] -and (Test-Path (Join-Path $media $q[0]))) {
     $p = Pic $s $q[0] $x 104 204 204 ('QR-код: ' + $q[1]) $true; $p.Line.Weight = [single]4
-    $null = T $s ($q[1] -replace '^https?://', '') $x 352 208 40 10.5 $WHITE $true $HEAD 1
+    $null = T $s ($q[1] -replace '^https?://', '') $x 352 214 40 9.5 $WHITE $true $HEAD 1
   } else {
     $b = Box $s $x 104 204 204 '3A2C22' $PAPERD 3 $false; $b.Line.DashStyle = 4
     $null = T $s 'Здесь будет QR-код. Впишите адрес в presentation\config.js и пересоберите.' ($x + 16) 180 172 60 10.5 $PAPERD $true $HEAD 2
