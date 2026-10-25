@@ -18,6 +18,8 @@ const Flow = {
   prog: null, diff: 'normal', desk: null, audioOn: false, skipIntro: false, skipDayCard: false,
   snap: null, exitDef: null, pauseOpen: false, _pauseClose: null,
   jury: /[?&]jury=1/.test(location.search), forceInterview: false,
+  /* ?seed=12345 в адресе: новая игра начинается с этим сидом, поэтому одни и те же дни можно показать снова */
+  seedParam: (() => { const m = /[?&]seed=(\d{1,10})(?:&|$)/.exec(location.search), v = m ? parseInt(m[1], 10) : null; return v !== null && v <= 2147483647 ? v : null; })(),
 
   /* ---------- служебное ---------- */
   unlockAudio() {
@@ -209,7 +211,8 @@ const Flow = {
   },
 
   start(nick) {
-    this.prog = Engine.newProgress(nick, this.diff);
+    this.prog = Engine.newProgress(nick, this.diff, this.seedParam);
+    if (this.seedParam !== null) UI.toast('Сид партии из адреса: ' + this.seedParam, 3200);
     this.skipIntro = false; this.skipDayCard = false;
     this.run();
   },
@@ -241,7 +244,7 @@ const Flow = {
           this.prog = JSON.parse(JSON.stringify(this.snap));
           this.skipIntro = true; this.skipDayCard = true;
         } else {                                                  // «игра заново»: тот же журналист и сложность, новый seed
-          this.prog = Engine.newProgress(this.prog.nick, this.prog.diff);
+          this.prog = Engine.newProgress(this.prog.nick, this.prog.diff, this.seedParam);
           this.skipIntro = true; this.skipDayCard = false;
         }
         this.onMenu = false;
@@ -281,6 +284,7 @@ const Flow = {
     const desk = this.desk = new Desk(prog, day);
     this.onMenu = false;
     desk.build();
+    if (Dev.on) Dev.seedInfo(true);                                 // режим разработчика: в начале каждого дня показываем сид
     day.bonus.forEach(id => desk.addToHand({ id: id, ch: 'interview', by: celebName || 'Знаменитость' }, { x: 440, y: 240, s: 1 }));
 
     // подводка босса: на сложной темы не называет и ничего не говорит, поэтому карточки нет

@@ -4,7 +4,7 @@
    Панель открывается кнопкой DEV или клавишей F2 (также ё / `); команды можно набирать в строке внизу панели, help — список. */
 
 const Dev = {
-  on: false, panel: null, badge: null, logEl: null, input: null, buf: [], hist: [], hi: 0, freezeBtn: null,
+  on: false, panel: null, badge: null, logEl: null, input: null, buf: [], hist: [], hi: 0, freezeBtn: null, seedInput: null,
 
   init() {
     if (/[?&]dev=1/.test(location.search)) this.enable(true, true);
@@ -36,7 +36,7 @@ const Dev = {
   },
 
   toggle() { if (this.panel) this.close(); else this.open(); },
-  close() { if (this.panel) { this.panel.remove(); this.panel = null; this.logEl = null; this.input = null; } },
+  close() { if (this.panel) { this.panel.remove(); this.panel = null; this.logEl = null; this.input = null; this.seedInput = null; } },
 
   /* ---------- панель ---------- */
   open() {
@@ -70,6 +70,17 @@ const Dev = {
     sel.addEventListener('change', () => { if (sel.value) this.run('topic ' + sel.value); sel.value = ''; });
     p.appendChild(sel);
 
+    // сид партии: из него (вместе с номером дня и попыткой) собирается каждый день; тот же сид и тот же день дают тот же день
+    r = sec('СИД ПАРТИИ');
+    const si = this.seedInput = U.el('input'); si.placeholder = 'сид (целое число)'; si.spellcheck = false; si.inputMode = 'numeric';
+    si.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') this.run('seed ' + si.value.trim()); else if (e.key === 'Escape') si.blur(); });
+    p.insertBefore(si, r);
+    btn(r, 'Показать', 'seed');
+    const go = U.el('button'); go.textContent = 'Запустить день с этим сидом';
+    go.addEventListener('click', () => { Snd.fx.click(); this.run('seed ' + si.value.trim()); });
+    r.appendChild(go);
+    this.refreshSeed();
+
     const h = U.el('h4'); h.textContent = 'КОМАНДА (help — список)'; p.appendChild(h);
     const inp = this.input = U.el('input'); inp.placeholder = 'call lena, time 30, day 3 ...'; inp.spellcheck = false;
     inp.addEventListener('keydown', e => {
@@ -82,6 +93,29 @@ const Dev = {
     p.appendChild(inp);
     this.logEl = U.el('div', 'dv-log'); p.appendChild(this.logEl);
     U.$('#stage').appendChild(p);
+  },
+  /* Поле сида показывает сид текущей партии (если вы не печатаете в нём прямо сейчас). */
+  refreshSeed() { if (this.seedInput && document.activeElement !== this.seedInput) this.seedInput.value = Flow.prog ? String(Flow.prog.seed) : ''; },
+  /* Сид, день, попытка, сложность и тема: всё, что нужно, чтобы снова получить этот день командой seed. brief: короткая подсказка в начале дня. */
+  seedInfo(brief) {
+    const p = Flow.prog;
+    if (!p) { this.say('Сид появится, когда начнётся игра. Заранее его можно задать в адресе: ?seed=число'); return; }
+    const d = Flow.desk && Flow.desk.day, topic = d && d.group ? ', тема «' + d.group.name + '»' : '', diff = (Engine.CFG[p.diff] || {}).name || p.diff, att = (p.attempt || 0) + 1;
+    this.say('Сид партии: ' + p.seed + '\nДень ' + p.day + ', попытка ' + att + ', сложность ' + diff + topic + (brief ? '' : '\nЗапустить этот день снова: seed ' + p.seed + ' ' + p.day + ' ' + att));
+    this.refreshSeed();
+  },
+  parseSeed(s) {
+    if (!/^\d{1,10}$/.test(String(s)) || parseInt(s, 10) > 2147483647) { this.say('Сид — целое число от 0 до 2147483647.'); return null; }
+    return parseInt(s, 10);
+  },
+  /* Готовит запуск дня D партии с сидом S так, как его увидит игрок, прошедший дни 1..D-1 с первой попытки: темы прошлых дней берутся из самого генератора.
+     Что не воспроизводится: день после интервью с бонусом (бонус зависит от ответов в интервью) и дни, которые игрок проваливал. */
+  applySeed(seed, day, attempt) {
+    const p = JSON.parse(JSON.stringify(Flow.snap));
+    p.seed = seed; p.used = []; p.lastGroup = null; p.attempt = 0; p.bonus = 0; delete p.devGroup;
+    for (let k = 1; k < day; k++) { p.day = k; const g = Engine.makeDay(p).group.id; p.used.push(g); p.lastGroup = g; }
+    Object.assign(Flow.snap, { seed: seed, day: day, used: p.used, lastGroup: p.lastGroup, attempt: attempt, bonus: 0 });
+    delete Flow.snap.devGroup;
   },
   paintFreeze() { if (this.freezeBtn) this.freezeBtn.classList.toggle('on', !!(Flow.desk && Flow.desk.freeze)); },
 
@@ -103,7 +137,7 @@ const Dev = {
 
   cmds: {
     help() {
-      Dev.say('call [boss|lena|boris|unknown|fufel] — звонок прямо сейчас\ntime <сек> | time +30 — время дня\nfreeze — заморозить/вернуть время\nhand true|all|clear — инфоповоды в руку\nmarks — метки ДА/НЕТ по правде\nend — закончить день\nperfect — закончить день идеально (100)\nday <1-' + DAYS_TOTAL + '> — начать этот день\ntopic <id> — тема дня (topics — список)\ninterview — день начнётся с интервью\nfinale — финал главы\noff — выключить режим');
+      Dev.say('call [boss|lena|boris|unknown|fufel] — звонок прямо сейчас\ntime <сек> | time +30 — время дня\nfreeze — заморозить/вернуть время\nhand true|all|clear — инфоповоды в руку\nmarks — метки ДА/НЕТ по правде\nend — закончить день\nperfect — закончить день идеально (100)\nday <1-' + DAYS_TOTAL + '> [сид] — начать этот день (по желанию с сидом)\nseed — показать сид партии и как запустить этот день снова\nseed <сид> [день] [попытка] — запустить день с этим сидом (день по умолчанию текущий, попытка 1 — первая)\ntopic <id> — тема дня (topics — список)\ninterview — день начнётся с интервью\nfinale — финал главы\noff — выключить режим');
     },
     call(who) {
       const d = Dev.desk(); if (!d) return;
@@ -150,11 +184,23 @@ const Dev = {
     },
     end() { const d = Dev.desk(); if (d) d.finish('manual'); },
     perfect() { const d = Dev.desk(); if (!d) return; Flow.devPerfect = true; d.finish('manual'); },
-    day(v) {
+    day(v, s) {
       if (!Dev.flow()) return;
       const n = parseInt(v, 10);
-      if (!(n >= 1 && n <= DAYS_TOTAL)) { Dev.say('day <1-' + DAYS_TOTAL + '>'); return; }
-      Flow.snap.day = n; Flow.snap.attempt = 0; delete Flow.snap.devGroup; Flow.exit('day'); Dev.say('День ' + n);
+      if (!(n >= 1 && n <= DAYS_TOTAL)) { Dev.say('day <1-' + DAYS_TOTAL + '> [сид]'); return; }
+      if (s !== undefined) { const sd = Dev.parseSeed(s); if (sd === null) return; Dev.applySeed(sd, n, 0); }
+      else { Flow.snap.day = n; Flow.snap.attempt = 0; delete Flow.snap.devGroup; }
+      Flow.exit('day'); Dev.say('День ' + n + (s !== undefined ? ', сид ' + Flow.snap.seed : ''));
+    },
+    seed(s, v, a) {
+      if (s === undefined || s === '') { Dev.seedInfo(false); return; }
+      if (!Dev.flow()) return;
+      const sd = Dev.parseSeed(s); if (sd === null) return;
+      const n = v === undefined ? Flow.snap.day : parseInt(v, 10);
+      if (!(n >= 1 && n <= DAYS_TOTAL)) { Dev.say('День: число от 1 до ' + DAYS_TOTAL); return; }
+      const att = a === undefined ? 0 : parseInt(a, 10) - 1;
+      if (!(att >= 0 && att <= 20)) { Dev.say('Попытка: число от 1 (первая) до 21'); return; }
+      Dev.applySeed(sd, n, att); Flow.exit('day'); Dev.say('Запускаю день ' + n + ' с сидом ' + sd + (att ? ', попытка ' + (att + 1) : ''));
     },
     topic(id) {
       if (!Dev.flow()) return;
